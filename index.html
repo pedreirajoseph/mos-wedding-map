@@ -159,10 +159,14 @@ function draw(us,venues){
   venues.forEach(function(v){var p=proj([v.lng,v.lat]);v._x=p[0];v._y=p[1];});
 
   var legLayer=g.append("g");
+  var hubLayer=g.append("g");
   var dotLayer=g.append("g");
 
   var legs=legLayer.selectAll("path").data(venues).join("path")
     .attr("fill","none").attr("stroke","#FF951E").attr("stroke-opacity",0.75).attr("stroke-linejoin","round").attr("stroke-linecap","round").style("display","none");
+
+  var hubs=hubLayer.selectAll("circle").data(venues).join("circle")
+    .attr("fill","#dcdcdc").attr("fill-opacity",0.9).attr("stroke","#0d0d0d").style("display","none");
 
   function elbow(ax,ay,bx,by){
     var dx=bx-ax,dy=by-ay,adx=Math.abs(dx),ady=Math.abs(dy);
@@ -174,7 +178,7 @@ function draw(us,venues){
   var vg=dotLayer.selectAll("g.v").data(venues).join("g").attr("class","v")
     .style("cursor","pointer")
     .on("click",function(e,d){e.stopPropagation();openCard(d);});
-  vg.append("circle").attr("class","halo").attr("fill","#F2871E").attr("fill-opacity",0.30);
+  vg.append("circle").attr("class","halo").attr("fill","#F2871E").attr("fill-opacity",0.20);
   vg.append("circle").attr("class","viz").attr("fill","#FF951E").attr("fill-opacity",0.98).attr("stroke","#1a1a1a");
   var hit=vg.append("circle").attr("class","hit").attr("fill","transparent").style("pointer-events","all");
   hit.append("title").text(function(d){return d.n+" — "+d.c;});
@@ -213,11 +217,15 @@ function draw(us,venues){
     }
     vg.attr("transform",function(d){return "translate("+d._px+","+d._py+")";});
     legs.each(function(d){var L=d3.select(this);
-      if(d._fan){L.style("display",null).attr("d",elbow(d._cx,d._cy,d._px,d._py)).attr("stroke-width",1.8/k);}
+      if(d._fan){L.style("display",null).attr("d",elbow(d._cx,d._cy,d._px,d._py)).attr("stroke-width",1.4/k);}
       else L.style("display","none");
     });
-    vg.select("circle.halo").attr("r",12.5/k);
-    vg.select("circle.viz").attr("r",6.8/k).attr("stroke-width",1.3/k);
+    hubs.each(function(d){var Hh=d3.select(this);
+      if(d._fan){Hh.style("display",null).attr("cx",d._cx).attr("cy",d._cy).attr("r",2.6/k).attr("stroke-width",0.7/k);}
+      else Hh.style("display","none");
+    });
+    vg.select("circle.halo").attr("r",8.5/k);
+    vg.select("circle.viz").attr("r",5/k).attr("stroke-width",1.1/k);
     vg.select("circle.hit").attr("r",24/k);
     g.selectAll("path.state").attr("stroke-width",0.7/k);
   }
