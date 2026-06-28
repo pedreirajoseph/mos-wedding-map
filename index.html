@@ -13,14 +13,17 @@
   #btns{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px;z-index:5;}
   #btns button{width:42px;height:42px;background:#161616;color:#F2871E;border:1px solid #444;border-radius:9px;font-size:24px;line-height:1;cursor:pointer;}
   #btns button:hover{background:#222;}
-  #card{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(330px,88%);background:#161616;border:1px solid #3a3a3a;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.6);overflow:hidden;display:none;z-index:10;color:#eee;text-align:left;}
-  #card img{width:100%;height:150px;object-fit:cover;display:block;background:#222;}
-  #card .body{padding:10px 12px 12px;}
-  #card .nm{color:#FF951E;font-weight:bold;font-size:16px;line-height:1.2;}
-  #card .ad{color:#bdbdbd;font-size:12.5px;margin-top:4px;line-height:1.4;}
-  #card .lk{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px;}
-  #card .lk a{background:#F2871E;color:#161616;text-decoration:none;font-weight:bold;font-size:12.5px;padding:6px 10px;border-radius:7px;}
-  #card .x{position:absolute;top:7px;right:9px;width:27px;height:27px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:16px;cursor:pointer;line-height:1;}
+  #card{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:min(340px,92%);max-height:88%;overflow:auto;-webkit-overflow-scrolling:touch;background:#161616;border:1px solid #3a3a3a;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.6);display:none;z-index:10;color:#eee;text-align:left;}
+  #cardbg{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;z-index:9;}
+  #card .hero{width:100%;height:clamp(72px,22vh,150px);object-fit:cover;display:block;background:#222;}
+  #card .body{padding:11px 13px 13px;}
+  #card .nm{color:#FF951E;font-weight:bold;font-size:clamp(15px,4.2vw,17px);line-height:1.2;padding-right:30px;}
+  #card .ad{color:#bdbdbd;font-size:clamp(12px,3.4vw,13px);margin-top:4px;line-height:1.4;}
+  #card .films{margin-top:11px;display:flex;flex-direction:column;gap:8px;}
+  #card .btn{display:block;text-align:center;background:#F2871E;color:#161616;text-decoration:none;font-weight:bold;font-size:clamp(13px,3.6vw,14px);padding:11px;border-radius:9px;}
+  #card .filmrow{display:flex;align-items:center;gap:10px;background:#1f1f1f;border:1px solid #333;border-radius:9px;padding:7px 9px;text-decoration:none;color:#FF951E;font-weight:bold;font-size:clamp(12.5px,3.4vw,13.5px);}
+  #card .filmrow .ft{width:64px;height:40px;object-fit:cover;border-radius:5px;flex:0 0 auto;background:#333;}
+  #card .x{position:absolute;top:8px;right:10px;width:32px;height:32px;border:0;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:18px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;z-index:2;}
   .legend{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;color:#8a8a8a;font-size:13px;text-align:center;}
   .legend .dot{width:11px;height:11px;border-radius:50%;background:#F2871E;display:inline-block;}
   svg{display:block;width:100%;height:100%;cursor:grab;touch-action:none;}
@@ -31,6 +34,7 @@
   <div id="cap">Tap a dot to see the venue — <b>weddings filmed across Louisiana &amp; the Gulf South</b></div>
   <div id="mapbox">
     <div id="btns"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
+    <div id="cardbg"></div>
     <div id="card"></div>
   </div>
   <div class="legend"><span class="dot"></span> Tap a dot for venue details · pinch or use + / &minus; to zoom · drag to pan</div>
@@ -90,24 +94,28 @@ var W=1000,H=620;
 var svg=d3.select("#mapbox").append("svg").attr("viewBox","0 0 "+W+" "+H).attr("preserveAspectRatio","xMidYMid meet");
 var cap=document.getElementById("cap");
 var card=document.getElementById("card");
+var bg=document.getElementById("cardbg");
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function showName(v){cap.innerHTML='<b>'+esc(v.n)+'</b> &nbsp;·&nbsp; '+esc(v.c);}
 function ytId(u){var m=String(u).match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:"";}
 function ytThumb(u){var id=ytId(u);return id?("https://img.youtube.com/vi/"+id+"/hqdefault.jpg"):"";}
 function openCard(v){
-  var img=v.photo||(v.films&&v.films.length?ytThumb(v.films[0]):"");
+  var hero=v.photo||(v.films&&v.films.length?ytThumb(v.films[0].url):"");
   var h='<button class="x" aria-label="Close">&times;</button>';
-  if(img)h+='<img src="'+esc(img)+'" alt="" onerror="this.style.display=\'none\'">';
+  if(hero)h+='<img class="hero" src="'+esc(hero)+'" alt="" onerror="this.style.display=\'none\'">';
   h+='<div class="body"><div class="nm">'+esc(v.n)+'</div>';
-  h+='<div class="ad">'+esc(v.c)+(v.a?' &nbsp;·&nbsp; '+esc(v.a):'')+'</div>';
-  if(v.films&&v.films.length){
-    h+='<div class="lk">'+v.films.map(function(u,i){return '<a href="'+esc(u)+'" target="_blank" rel="noopener">▶ '+(v.films.length>1?('Film '+(i+1)):'Watch our film')+'</a>';}).join('')+'</div>';
+  h+='<div class="ad">'+esc(v.c)+(v.a?' &nbsp;\u00b7&nbsp; '+esc(v.a):'')+'</div>';
+  if(v.films&&v.films.length===1){
+    var f=v.films[0];
+    h+='<div class="films"><a class="btn" href="'+esc(f.url)+'" target="_blank" rel="noopener">\u25b6 '+esc(f.label||"Watch our film")+'</a></div>';
+  } else if(v.films&&v.films.length>1){
+    h+='<div class="films">'+v.films.map(function(f,i){var t=ytThumb(f.url);return '<a class="filmrow" href="'+esc(f.url)+'" target="_blank" rel="noopener">'+(t?'<img class="ft" src="'+esc(t)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<span>\u25b6 '+esc(f.label||("Film "+(i+1)))+'</span></a>';}).join('')+'</div>';
   }
   h+='</div>';
-  card.innerHTML=h;card.style.display='block';
-  card.querySelector('.x').onclick=function(e){e.stopPropagation();card.style.display='none';};
+  card.innerHTML=h;card.style.display='block';bg.style.display='block';
+  card.querySelector('.x').onclick=function(e){e.stopPropagation();closeCard();};
 }
-function closeCard(){card.style.display='none';}
+function closeCard(){card.style.display='none';bg.style.display='none';}
 function parseCSV(text){
   var rows=[],row=[],cur="",q=false;
   for(var i=0;i<text.length;i++){var c=text[i];
@@ -128,7 +136,7 @@ function rowsToVenues(rows){
   for(var r=1;r<rows.length;r++){var row=rows[r];if(!row)continue;
     var n=(row[iN]||"").trim();if(!n)continue;
     var lat=parseFloat(row[iLat]),lng=parseFloat(row[iLng]);if(isNaN(lat)||isNaN(lng))continue;
-    var films=[];if(iF>=0&&row[iF]){films=row[iF].split(",").map(function(u){return u.trim();}).filter(function(u){return u;});}
+    var films=[];if(iF>=0&&row[iF]){films=row[iF].split(",").map(function(s){return s.trim();}).filter(function(s){return s;}).map(function(s){var p=s.split("|");return p.length>1?{label:p[0].trim(),url:p.slice(1).join("|").trim()}:{label:"",url:s};});}
     out.push({n:n,c:(row[iC]||"").trim(),a:iA>=0?(row[iA]||"").trim():"",photo:iP>=0?(row[iP]||"").trim():"",lat:lat,lng:lng,films:films});
   }
   return out;
@@ -196,7 +204,7 @@ function draw(us,venues){
         var n=members.length;
         if(n<2||n>8)return;
         var cx=0,cy=0;members.forEach(function(mi){cx+=venues[mi]._x;cy+=venues[mi]._y;});cx/=n;cy/=n;
-        var R=(14+3.5*n)/k;
+        var Rs=Math.min((20+5*n)*(k/K0),120);var R=Rs/k;
         members.forEach(function(mi,idx){
           var v=venues[mi],ang=(idx/n)*2*Math.PI-Math.PI/2;
           v._cx=cx;v._cy=cy;v._px=cx+Math.cos(ang)*R;v._py=cy+Math.sin(ang)*R;v._fan=true;
@@ -210,7 +218,7 @@ function draw(us,venues){
     });
     vg.select("circle.halo").attr("r",12.5/k);
     vg.select("circle.viz").attr("r",6.8/k).attr("stroke-width",1.3/k);
-    vg.select("circle.hit").attr("r",18/k);
+    vg.select("circle.hit").attr("r",24/k);
     g.selectAll("path.state").attr("stroke-width",0.7/k);
   }
 
@@ -220,6 +228,7 @@ function draw(us,venues){
   });
   svg.call(zoom);
   svg.on("click",function(){closeCard();});
+  bg.onclick=function(){closeCard();};
   layout(1);
   document.getElementById("zin").onclick=function(){svg.transition().duration(300).call(zoom.scaleBy,1.8);};
   document.getElementById("zout").onclick=function(){svg.transition().duration(300).call(zoom.scaleBy,1/1.8);};
