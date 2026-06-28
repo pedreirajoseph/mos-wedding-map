@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Places We've Filmed — Mountain Of Stone Media</title>
+<style>
+  html,body{height:100%;margin:0;padding:0;overflow:hidden;background:#0d0d0d;font-family:Arial,Helvetica,sans-serif;}
+  #wrap{height:100%;box-sizing:border-box;display:flex;flex-direction:column;max-width:1200px;margin:0 auto;padding:8px 12px 10px;}
+  #cap{flex:0 0 auto;color:#cfcfcf;font-size:15px;margin:2px 2px 8px;min-height:20px;text-align:center;}
+  #cap b{color:#F2871E;}
+  #cap a{color:#FF951E;text-decoration:underline;}
+  #mapbox{flex:1 1 auto;min-height:0;position:relative;width:100%;background:#0d0d0d;border:1px solid #262626;border-radius:14px;overflow:hidden;}
+  #btns{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px;z-index:5;}
+  #btns button{width:38px;height:38px;background:#161616;color:#F2871E;border:1px solid #444;border-radius:9px;font-size:22px;line-height:1;cursor:pointer;}
+  #btns button:hover{background:#222;}
+  .legend{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;color:#8a8a8a;font-size:13px;}
+  .legend .dot{width:11px;height:11px;border-radius:50%;background:#F2871E;display:inline-block;}
+  svg{display:block;width:100%;height:100%;cursor:grab;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="cap">Tap a dot to see the venue — <b>weddings filmed across Louisiana &amp; the Gulf South</b></div>
+  <div id="mapbox">
+    <div id="btns"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
+  </div>
+  <div class="legend"><span class="dot"></span> Each dot is a venue or church we've filmed · scroll, pinch, or use + / &minus; to zoom · drag to pan</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+/* ============================================================
+   TO CONNECT YOUR GOOGLE SHEET:
+   Paste your published CSV link between the quotes below.
+   Leave it empty ("") to use the built-in list further down.
+   ============================================================ */
+var CSV_URL = "";
+
+var ATLAS_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
+
+/* Built-in fallback list (used until CSV_URL is set) */
+var FALLBACK_VENUES=[
+{n:"Fleur de Lis Event Center",c:"Mandeville, LA",lat:30.394,lng:-90.0939},
+{n:"Maison Lafitte",c:"Mandeville, LA",lat:30.3585,lng:-90.0782},
+{n:"Our Lady of the Lake Catholic Church",c:"Mandeville, LA",lat:30.358,lng:-90.0792},
+{n:"St. Peter Catholic Church",c:"Covington, LA",lat:30.479,lng:-90.101},
+{n:"First Baptist Church Covington",c:"Covington, LA",lat:30.432,lng:-90.123},
+{n:"The Antebellum House",c:"Slidell, LA",lat:30.2762,lng:-89.783},
+{n:"Palmettos on the Bayou",c:"Slidell, LA",lat:30.2555,lng:-89.7555},
+{n:"Our Lady of Lourdes",c:"Slidell, LA",lat:30.27,lng:-89.78},
+{n:"Bride Adorned",c:"Slidell, LA",lat:30.256,lng:-89.747},
+{n:"Lake Pontchartrain Basin Maritime Museum",c:"Madisonville, LA",lat:30.4082,lng:-90.1588},
+{n:"Southern Charm Events",c:"Folsom, LA",lat:30.631,lng:-90.186},
+{n:"The Oaks Wedding & Events Center",c:"Ponchatoula, LA",lat:30.43,lng:-90.488},
+{n:"The Barn at TH Farms",c:"Independence, LA",lat:30.59,lng:-90.47},
+{n:"The Berry Barn",c:"Amite, LA",lat:30.70,lng:-90.5155},
+{n:"The Greenery",c:"Amite, LA",lat:30.7012,lng:-90.514},
+{n:"Cedar Post Barn",c:"Albany, LA",lat:30.50,lng:-90.58},
+{n:"Carter Plantation",c:"Springfield, LA",lat:30.425,lng:-90.54},
+{n:"St. Louis Cathedral",c:"New Orleans, LA",lat:29.9578,lng:-90.0637},
+{n:"The Hilton, New Orleans",c:"New Orleans, LA",lat:29.946,lng:-90.0648},
+{n:"The Marriott, New Orleans",c:"New Orleans, LA",lat:29.953,lng:-90.068},
+{n:"Compass Point Events",c:"New Orleans (Algiers), LA",lat:29.952,lng:-90.052},
+{n:"The Balcony Ballroom",c:"Metairie, LA",lat:29.999,lng:-90.175},
+{n:"Crystal Events",c:"Kenner, LA",lat:30.022,lng:-90.245},
+{n:"The Four Columns",c:"Harvey, LA",lat:29.887,lng:-90.078},
+{n:"Bayou Barn",c:"Crown Point, LA",lat:29.79,lng:-90.118},
+{n:"The Abby Rose",c:"Violet, LA",lat:29.898,lng:-89.897},
+{n:"Los Isleños Museum Complex",c:"St. Bernard, LA",lat:29.866,lng:-89.831},
+{n:"Ashley Manor",c:"Baton Rouge, LA",lat:30.425,lng:-91.015},
+{n:"The Henry Smith House",c:"Picayune, MS",lat:30.50,lng:-89.68},
+{n:"The Barn at Sarah Bella",c:"Picayune, MS",lat:30.53,lng:-89.70},
+{n:"Oak Crest Mansion",c:"Pass Christian, MS",lat:30.336,lng:-89.262},
+{n:"The Barn at Love Farms",c:"Kiln, MS",lat:30.403,lng:-89.422},
+{n:"Thorncrown Chapel",c:"Eureka Springs, AR",lat:36.4258,lng:-93.779},
+{n:"Loblolly Farm",c:"Semmes, AL",lat:30.78,lng:-88.27}
+];
+
+var W=1000,H=620;
+var svg=d3.select("#mapbox").append("svg").attr("viewBox","0 0 "+W+" "+H).attr("preserveAspectRatio","xMidYMid meet");
+var cap=document.getElementById("cap");
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function showName(v){
+  var html='<b>'+esc(v.n)+'</b> &nbsp;·&nbsp; '+esc(v.c);
+  if(v.films&&v.films.length){
+    var links=v.films.map(function(u,i){return '<a href="'+u+'" target="_blank" rel="noopener">▶ '+(v.films.length>1?('Film '+(i+1)):'Watch the film')+'</a>';});
+    html+=' &nbsp;·&nbsp; '+links.join(' &nbsp; ');
+  }
+  cap.innerHTML=html;
+}
+
+/* minimal CSV parser (handles quoted fields / commas in addresses) */
+function parseCSV(text){
+  var rows=[],row=[],cur="",q=false;
+  for(var i=0;i<text.length;i++){var c=text[i];
+    if(q){ if(c=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else { if(c=='"')q=true; else if(c==','){row.push(cur);cur="";} else if(c=='\n'){row.push(cur);rows.push(row);row=[];cur="";} else if(c=='\r'){} else cur+=c; }
+  }
+  if(cur!==""||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+function rowsToVenues(rows){
+  if(!rows.length)return[];
+  var h=rows[0].map(function(x){return x.trim().toLowerCase();});
+  function idx(names){for(var n=0;n<names.length;n++){var k=h.indexOf(names[n]);if(k>=0)return k;}return -1;}
+  var iN=idx(["venue","name"]),iC=idx(["city"]),iLat=idx(["latitude","lat"]),iLng=idx(["longitude","lng","long"]),
+      iF=idx(["film links (comma-separated)","film links","film link","films","film link (youtube)"]);
+  var out=[];
+  for(var r=1;r<rows.length;r++){var row=rows[r];if(!row)continue;
+    var n=(row[iN]||"").trim();if(!n)continue;
+    var lat=parseFloat(row[iLat]),lng=parseFloat(row[iLng]);if(isNaN(lat)||isNaN(lng))continue;
+    var films=[];if(iF>=0&&row[iF]){films=row[iF].split(",").map(function(u){return u.trim();}).filter(function(u){return u;});}
+    out.push({n:n,c:(row[iC]||"").trim(),lat:lat,lng:lng,films:films});
+  }
+  return out;
+}
+function loadVenues(){
+  if(!CSV_URL)return Promise.resolve(FALLBACK_VENUES);
+  return fetch(CSV_URL).then(function(r){return r.text();}).then(function(t){var v=rowsToVenues(parseCSV(t));return v.length?v:FALLBACK_VENUES;}).catch(function(){return FALLBACK_VENUES;});
+}
+
+function draw(us,venues){
+  var pts={type:"FeatureCollection",features:venues.map(function(v){return {type:"Feature",geometry:{type:"Point",coordinates:[v.lng,v.lat]}};})};
+  var proj=d3.geoMercator().fitExtent([[70,40],[W-70,H-40]],pts);
+  var path=d3.geoPath(proj);
+  var g=svg.append("g");
+  var zoom=d3.zoom().scaleExtent([1,20]).on("zoom",function(ev){
+    var k=ev.transform.k;
+    g.attr("transform",ev.transform);
+    g.selectAll("path.state").attr("stroke-width",0.7/k);
+    g.selectAll("circle.viz").attr("r",5.5/k).attr("stroke-width",1.2/k);
+    g.selectAll("circle.halo").attr("r",10/k);
+    g.selectAll("circle.hit").attr("r",14/k);
+  });
+  svg.call(zoom);
+  g.append("g").selectAll("path")
+    .data(topojson.feature(us,us.objects.states).features).join("path")
+    .attr("class","state").attr("d",path).attr("fill","#1b1b1b").attr("stroke","#363636").attr("stroke-width",0.7);
+  var vg=g.append("g").selectAll("g.venue").data(venues).join("g")
+    .attr("class","venue")
+    .attr("transform",function(d){var p=proj([d.lng,d.lat]);return "translate("+p[0]+","+p[1]+")";})
+    .style("cursor","pointer")
+    .on("mouseenter",function(e,d){showName(d);})
+    .on("click",function(e,d){e.stopPropagation();showName(d);});
+  vg.append("circle").attr("class","halo").attr("r",10).attr("fill","#F2871E").attr("fill-opacity",0.22);
+  vg.append("circle").attr("class","viz").attr("r",5.5).attr("fill","#FF951E").attr("fill-opacity",0.98).attr("stroke","#1a1a1a").attr("stroke-width",1.2);
+  var hit=vg.append("circle").attr("class","hit").attr("r",14).attr("fill","transparent").style("pointer-events","all");
+  hit.append("title").text(function(d){return d.n+" — "+d.c;});
+  document.getElementById("zin").onclick=function(){svg.transition().duration(300).call(zoom.scaleBy,1.8);};
+  document.getElementById("zout").onclick=function(){svg.transition().duration(300).call(zoom.scaleBy,1/1.8);};
+}
+
+Promise.all([d3.json(ATLAS_URL),loadVenues()]).then(function(a){draw(a[0],a[1]);});
+</script>
+</body>
+</html>
