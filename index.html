@@ -45,7 +45,7 @@
    Sheet columns read (by name): Venue, City, Address,
    Latitude, Longitude, Photo, Film Links (comma-separated)
    ============================================================ */
-var CSV_URL = "";
+var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ5OIoWfNXD0bU3C_Ia6o8u4sxlkpn23ND-oyLGYSggei-yto9v5ChJJo3WeDcsgdb-NJuqk5IwV0g/pub?gid=1799191592&single=true&output=csv";
 
 var ATLAS_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
@@ -154,7 +154,7 @@ function draw(us,venues){
   var dotLayer=g.append("g");
 
   var legs=legLayer.selectAll("path").data(venues).join("path")
-    .attr("fill","none").attr("stroke","#F2871E").attr("stroke-opacity",0.6).attr("stroke-linejoin","round").attr("stroke-linecap","round").style("display","none");
+    .attr("fill","none").attr("stroke","#FF951E").attr("stroke-opacity",0.75).attr("stroke-linejoin","round").attr("stroke-linecap","round").style("display","none");
 
   function elbow(ax,ay,bx,by){
     var dx=bx-ax,dy=by-ay,adx=Math.abs(dx),ady=Math.abs(dy);
@@ -165,9 +165,8 @@ function draw(us,venues){
 
   var vg=dotLayer.selectAll("g.v").data(venues).join("g").attr("class","v")
     .style("cursor","pointer")
-    .on("mouseenter",function(e,d){showName(d);})
-    .on("click",function(e,d){e.stopPropagation();showName(d);openCard(d);});
-  vg.append("circle").attr("class","halo").attr("fill","#F2871E").attr("fill-opacity",0.22);
+    .on("click",function(e,d){e.stopPropagation();openCard(d);});
+  vg.append("circle").attr("class","halo").attr("fill","#F2871E").attr("fill-opacity",0.30);
   vg.append("circle").attr("class","viz").attr("fill","#FF951E").attr("fill-opacity",0.98).attr("stroke","#1a1a1a");
   var hit=vg.append("circle").attr("class","hit").attr("fill","transparent").style("pointer-events","all");
   hit.append("title").text(function(d){return d.n+" — "+d.c;});
@@ -206,12 +205,12 @@ function draw(us,venues){
     }
     vg.attr("transform",function(d){return "translate("+d._px+","+d._py+")";});
     legs.each(function(d){var L=d3.select(this);
-      if(d._fan){L.style("display",null).attr("d",elbow(d._cx,d._cy,d._px,d._py)).attr("stroke-width",1.3/k);}
+      if(d._fan){L.style("display",null).attr("d",elbow(d._cx,d._cy,d._px,d._py)).attr("stroke-width",1.8/k);}
       else L.style("display","none");
     });
-    vg.select("circle.halo").attr("r",10/k);
-    vg.select("circle.viz").attr("r",5.5/k).attr("stroke-width",1.2/k);
-    vg.select("circle.hit").attr("r",16/k);
+    vg.select("circle.halo").attr("r",12.5/k);
+    vg.select("circle.viz").attr("r",6.8/k).attr("stroke-width",1.3/k);
+    vg.select("circle.hit").attr("r",18/k);
     g.selectAll("path.state").attr("stroke-width",0.7/k);
   }
 
